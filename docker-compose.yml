@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@db:5432/family_stories_dev
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-here-change-in-production
+      - EMAIL_SERVER_HOST=mailhog
+      - EMAIL_SERVER_PORT=1025
+      - EMAIL_SERVER_USER=
+      - EMAIL_SERVER_PASSWORD=
+      - EMAIL_FROM=noreply@family-stories.local
+    depends_on:
+      - db
+    command: npm run dev
+    networks:
+      - family-stories
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=family_stories_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - family-stories
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web interface
+    networks:
+      - family-stories
+
+volumes:
+  postgres_data:
+
+networks:
+  family-stories:
+    driver: bridge
